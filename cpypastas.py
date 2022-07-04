@@ -422,13 +422,8 @@ class CombinedWorldState:
         if len(self.resources_ordered[typeof]) == 0:
             return None
         else:
-            rval = self.resources_ordered[typeof][-1]
-            
+            rval = self.resources_ordered[typeof][-1]            
             self.resources_ordered[typeof].pop()
-            if typeof == Tree:
-                # spread villagers out
-                self.resources_ordered[typeof].pop()
-                self.resources_ordered[typeof].pop()
             return rval
 
     # set the coordinate to the new 
