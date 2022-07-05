@@ -239,19 +239,6 @@ def get_nearby_coords(x,y):
     
     return (valid_coords)
 
-def aggregate_weight(exp_weight_map):
-    base_weights = deepcopy(exp_weight_map)
-
-
-    for x in range(WSIZE):
-        for y in range(WSIZE):
-            # add up nearby coordinatrs
-            neighbors = get_nearby_coords(x,y)
-            for (xn, yn) in neighbors:
-                exp_weight_map[(x, y)] = exp_weight_map[(x, y)] + base_weights[(xn, yn)]
-
-    return exp_weight_map
-
 
 def multi_aggregate(exp_weight_map, num_aggregates):
     exp_weight_map = deepcopy(exp_weight_map)

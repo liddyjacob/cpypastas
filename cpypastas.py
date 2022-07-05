@@ -234,8 +234,23 @@ class CombinedWorldState:
 
         return None
 
+    def build_frontier_edge(self):
+        self.border_path = []
 
+        inverted_extreme = (self.length - 1 if(self.KINGDOM_EXTREME[0] == 0) else 0,  
+            self.height - 1 if(self.KINGDOM_EXTREME[1] == 0) else 0)
 
+        adjusted_extreme = (0 if(self.KINGDOM_EXTREME[0] == 0) else self.length - 1,  
+            0 if(self.KINGDOM_EXTREME[1] == 0) else self.height - 1)
+
+        frontier_outline = [(adjusted_extreme[0], inverted_extreme[1]), 
+            (inverted_extreme[0], inverted_extreme[1]),
+            (inverted_extreme[0], adjusted_extreme[1])]
+
+        for i in range(len(frontier_outline) - 1):
+            sub_path = build_direct_path(frontier_outline[i], 
+                frontier_outline[i + 1])
+            self.border_path += sub_path[0:-1]
 
     # Build the 'frontier' of the map. This is where we will station units
     def build_frontier(self):
@@ -304,12 +319,11 @@ class CombinedWorldState:
         self.border_path = []
         # 
         for i in range(len(frontier_outline) - 1):
-
-             
             sub_path = build_direct_path(frontier_outline[i], 
                 frontier_outline[i + 1])
-            sub_path.reverse()
-            self.border_path += sub_path[1:-1]
+            self.border_path += sub_path[0:-1]
+
+
 
     def get_scatter_position(self, id):
         normalized_position = int((((id * 129) % ID_MAX) / ID_MAX) * len(self.border_path))
@@ -328,9 +342,11 @@ class CombinedWorldState:
 
         if normalized_position == len(self.border_path):
             normalized_position = len(self.border_path) - 1
+        
         #print(position_number)
         if normalized_position < 0:
             return None
+        
         return self.border_path[normalized_position]
 
     def get_wander_locations(self):
@@ -522,7 +538,10 @@ class CombinedWorldState:
                 self.processVillager(unit)
 
         self.make_pois()
-        self.build_frontier()
+        if len(self.gatherEmpire()) > 500:
+            self.build_frontier_edge()
+        else:
+            self.build_frontier()
         # Force buildings to be spaced out from one another.
 
 
@@ -929,7 +948,7 @@ def run(world_state, players, team_idx):
 
     #cws.render()
     #print(players[team_idx])
-    #print(f"Population: {len(cws.gatherEmpire())} / {cws.get_housing()}")
+    print(f"Population: {len(cws.gatherEmpire())} / {cws.get_housing()}")
     #print(unit_commands)
     """
     
