@@ -38,6 +38,7 @@ def RepairNearby(unit, cws):
             obj = cws.get_coord((unit.x + i, unit.y + j))
             if obj in cws.gatherCity():
                 if obj.hp != obj.max_health():
+                    cws.productivity += 1
                     return Repair(obj)
 
     return None
@@ -47,14 +48,16 @@ def AttackNearbyResource(unit, cws, typeof=Resource):
         for dy in range(-1,2):
             obj = cws.get_coord((unit.x + dx, unit.y + dy))
             if issubclass(type(obj), typeof):
-                if obj.reserved == False:
-                    return Attack(obj)
+                #cws.remove_resource_from_list(obj)
+                cws.productivity += 1
+                return Attack(obj)
+                    
 
     return None
 
 def GetNearbyResource(unit, cws, typeof):
     # get lowest resource in kingdom:
-    target = cws.get_corner_resource(typeof)
+    target = cws.get_nearest_resource(unit, typeof)
 
     if target is None:
         return None
@@ -133,11 +136,17 @@ def BodyguardBasic(unit, otherUnit, cws):
     return Move([step[0], step[1]])
 
 
+def RandomMove(unit, cws):
+    circle_of_directions = [(1,0), (1,1), (0,1), (-1,1), (-1,0), (-1,-1), (0, -1), (1, -1)]
+    shuffle(circle_of_directions)
+    return Move(circle_of_directions[0])
+
+
 def GuardInPlace(unit, cws):
     return None
 
-def GetDirectMove(unit, wp, cws, attackFriend=True):
-
+def GetDirectMove(unit, wp, cws):
+    from ai.cpypastas.units import Villager
     if (unit.x, unit.y) == (wp[0], wp[1]):
         return DoNothing()
 
@@ -169,20 +178,18 @@ def GetDirectMove(unit, wp, cws, attackFriend=True):
         
         random.Random(unit.id).shuffle(try_more)
 
+        for dir in try_these:
+            obj = cws.get_coord((unit.x + dir[0], unit.y + dir[1]))
+            if issubclass(type(obj), Resource):
+                return Attack(obj)
 
         # do not attack city if possible.
         for dir in try_more:
             obj = cws.get_coord((unit.x + dir[0], unit.y + dir[1]))
-            if obj not in cws.gatherEmpire():
-                if obj is not None:
-                    if obj.team == cws.team_id and attackFriend==False:
-                        return Move(dir)
-                    return Attack(obj) 
-
-        if wp_obj is not None:
-            return Attack(wp_obj)
-        else:
-            return DoNothing()
+            if obj not in cws.gatherCity():
+                return Move(dir)
+  
+        return RandomMove(unit, cws)
 
 
 
@@ -220,7 +227,7 @@ def Scatter(unit, cws):
     if pos is None:
         return None
         
-    return GetDirectMove(unit, pos, cws, attackFriend=False)
+    return GetDirectMove(unit, pos, cws)
 
 
 # Send the unit to the boarder, if they are at the boarder
@@ -245,9 +252,9 @@ def BoarderPatrol(unit, cws):
     nearest_archer = get_nearest_enemy(unit, cws, Archer)
     if nearest_archer is not None:
         if nearest_archer.within_range((unit.x, unit.y)):
-            return GetDirectMove(unit, (nearest_archer.x, nearest_archer.y), cws, attackFriend=False)
+            return GetDirectMove(unit, (nearest_archer.x, nearest_archer.y), cws)
 
-    return GetDirectMove(unit, pos, cws, attackFriend=False)
+    return GetDirectMove(unit, pos, cws)
 
 def BoarderPatrolBasic(unit, cws):
     # always try attacking if there is something to attack

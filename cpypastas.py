@@ -122,7 +122,8 @@ class CombinedWorldState:
         self.villager_can_build[(3,3)] = False
         self.archer_id = 0
         self.villager_index = 0
-
+        self.productivity = 0
+        self.self_harm = 0
         # sorting is expensive, so we need markers to determine if we have done it
         # 
 
@@ -166,6 +167,9 @@ class CombinedWorldState:
 
     def can_afford(self, pair):
         return ( self.wood >= pair[0] and self.gold >= pair[1] )
+
+    def remove_resource_from_list(self, obj):
+        self.resources_ordered[type(obj)].remove((obj.x, obj.y))
 
     def identify_and_associate(self,x,y):
         obj = self.world_state_raw[x][y]
@@ -327,8 +331,6 @@ class CombinedWorldState:
 
     def get_scatter_position(self, id):
         normalized_position = int((((id * 129) % ID_MAX) / ID_MAX) * len(self.border_path))
-        print('scatter')
-
         if normalized_position == len(self.border_path):
             normalized_position = len(self.border_path) - 1
         #print(position_number)
@@ -419,28 +421,16 @@ class CombinedWorldState:
         self.house_sorted.pop()
         return house_location
 
-    # for counting:
-    def reserve_first_n_trees(self, n):
-        all_trees = [obj for obj in self.object_coord.values() if type(obj) == Tree and obj.reserved == False and obj.theoretical == False]
-
-        if len(all_trees) < n:
-            return 
-        
-        trees_sorted = sorted(all_trees, key = lambda tob: max(abs(tob.x - self.KINGDOM_EXTREME[0]),
-                abs(tob.y - self.KINGDOM_EXTREME[1])), reverse=True)
-
-        for i in range(n):
-            trees_sorted[-(i + 1)].reserved=True
-            self.reserved_trees.append(trees_sorted[-(i + 1)])
-
-
-    def get_corner_resource(self, typeof):
+    def get_nearest_resource(self, unit, typeof):
         if len(self.resources_ordered[typeof]) == 0:
             return None
-        else:
-            rval = self.resources_ordered[typeof][-1]            
-            self.resources_ordered[typeof].pop()
-            return rval
+
+        nearest_resource = min(self.resources_ordered[typeof], key = lambda resource: max(abs(unit.x - resource[0]),
+                abs(unit.y- resource[1])))
+
+        self.resources_ordered[typeof].remove(nearest_resource)
+
+        return nearest_resource
 
     # set the coordinate to the new 
     def set_coord(self, pair, wrapped_object):
@@ -510,7 +500,12 @@ class CombinedWorldState:
         return (xy[0], xy[1])
 
     def post_processing_steps(self):
-        avg_empire_location = self.gatherEmpire() + self.gatherCity()
+        if len(self.gatherEmpire() + self.gatherCity()) == 0:
+            return
+
+        avg_empire_location = self.gatherCity()
+        if len(self.gatherCity()) == 0:
+            avg_empire_location = self.gatherEmpire()
         x_mean = statistics.mean([obj.x for obj in avg_empire_location])
         y_mean = statistics.mean([obj.y for obj in avg_empire_location])
 
@@ -525,11 +520,11 @@ class CombinedWorldState:
         self.KINGDOM_EXTREME = (self.KINGDOM_CORNER[0] * self.length, self.KINGDOM_CORNER[1] * self.height)
         
 
-        self.resources_ordered[Gold] = sorted(self.resources_ordered[Gold], key = lambda pair: max(abs(pair[0] - self.KINGDOM_EXTREME[0]),
-                abs(pair[1] - self.KINGDOM_EXTREME[1])), reverse=True)
+        #self.resources_ordered[Gold] = sorted(self.resources_ordered[Gold], key = lambda pair: max(abs(pair[0] - self.KINGDOM_EXTREME[0]),
+        #        abs(pair[1] - self.KINGDOM_EXTREME[1])), reverse=True)
 
-        self.resources_ordered[Tree] = sorted(self.resources_ordered[Tree], key = lambda pair: max(abs(pair[0] - self.KINGDOM_EXTREME[0]),
-                abs(pair[1] - self.KINGDOM_EXTREME[1])), reverse=True)
+        #self.resources_ordered[Tree] = sorted(self.resources_ordered[Tree], key = lambda pair: max(abs(pair[0] - self.KINGDOM_EXTREME[0]),
+        #        abs(pair[1] - self.KINGDOM_EXTREME[1])), reverse=True)
 
         self.post_processing_loop()
 
@@ -809,6 +804,8 @@ def run(world_state, players, team_idx):
     iterate_over_map(cws)
     
     cws.post_processing_steps()
+    if len(cws.gatherEmpire() + cws.gatherCity()) is 0:
+        return []
     resource_plinko_board(cws)
     #print(REGISTRY)
 
@@ -949,6 +946,8 @@ def run(world_state, players, team_idx):
     #cws.render()
     #print(players[team_idx])
     print(f"Population: {len(cws.gatherEmpire())} / {cws.get_housing()}")
+    print(f"Productivity: {cws.productivity} / {cws.villager_index}")
+    print(f"Self Mutilation: {cws.self_harm}")
     #print(unit_commands)
     """
     

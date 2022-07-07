@@ -84,15 +84,6 @@ class Villager(Unit):
         if turn:
             self.turn = turn.apply(self)
             return
-
-        # scatter the villagers
-        if scatter_time():
-            turn = Scatter(self, cws)
-            if turn:
-                self.turn = turn.apply(self)
-                return
-
-
         
         # build houses if a house is needed
         if cws.get_housing() < len(cws.gatherEmpire()) + 1.5 * len(cws.gatherCity()) - 1.5 * cws.num_buildings(House) + 4:
@@ -114,12 +105,6 @@ class Villager(Unit):
 
         #if high enough population, ignore villager shuffling when possible:
         if cws.getPopulation(Villager) > 8:
-            if self.vil_index == 0:
-                turn = Wander(self, cws)
-                if turn:
-                    self.turn = turn.apply(self)
-                    return
-
             turn = AttackNearbyResource(self, cws, Gold)
             if turn:
                 self.turn = turn.apply(self)
@@ -129,6 +114,13 @@ class Villager(Unit):
             if turn:
                 self.turn = turn.apply(self)
                 return
+            
+            # scatter the villagers
+            if scatter_time(self.id):
+                turn = Scatter(self, cws)
+                if turn:
+                    self.turn = turn.apply(self)
+                    return
 
         # also once we have 12 villagers, we should assign jobs by modulating id
         if cws.getPopulation(Villager) >= 13:

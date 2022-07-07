@@ -3,7 +3,7 @@ import multiprocessing
 from operator import ne
 from pickle import TRUE
 from turtle import up
-from ai.cpypastas.buildings import Barracks, Range, Townhall, Stable
+from ai.cpypastas.buildings import Barracks, House, Range, Townhall, Stable
 from ai.cpypastas.constants import *
 from ai.cpypastas.resources import Unknown
 # Given size of Matrix
@@ -12,7 +12,6 @@ import math
 import random
 from random import shuffle
 import time
-
 
 def get_vect_length(vect):
     return math.sqrt(vect[0]**2 + vect[1]**2)
@@ -95,68 +94,6 @@ def quick_path_a_star(cws, start, end):
                     openSet.add(neighbor)
     return None
 
-def get_path_a_star(cws, start, end, rand=True, time_limit = .025, passthrough_units = False):
-    raise("stop...")
-    # Only allow a select period of time for a* algorithm.
-    from ai.cpypastas.units import Unit
-
-    openSet = set()
-    openSet.add(start)
-
-    cameFrom = {}
-    gScore = {}
-    gScore[start] = 0
-
-    fScore = {}
-    fScore[start] = (1)
-
-    start = time.time()
-
-    while len(openSet) != 0:
-        curr = min(openSet, key=fScore.get)
-        if curr == end:
-            return reconstruct_path(cameFrom, curr)
-        
-        if time.time() - start > time_limit:
-            return reconstruct_path(cameFrom, curr)
-
-        openSet.remove(curr)
-
-        moves = []
-
-        shuffled_diff = [-1,0,1]
-        shuffle(shuffled_diff)
-
-        for xk in shuffled_diff: 
-            for yk in shuffled_diff:
-                if xk != 0 or  yk != 0:
-                    moves.append((curr[0] + xk, curr[1] + yk))
-
-
-        for neighbor in moves:
-            if neighbor != end and not cws.is_traversable(neighbor):
-                if passthrough_units and issubclass(type(cws.get_coord(neighbor)), Unit):
-                    tentative_gScore = gScore[curr] + 1
-                else:
-                    tentative_gScore = gScore[curr] + 100000
-            else:
-                tentative_gScore = gScore[curr] + 1 
-            
-            if gScore.get(neighbor) is None:
-                gScore[neighbor] = math.inf
-            if tentative_gScore < gScore[neighbor]:
-                cameFrom[neighbor] = curr
-                gScore[neighbor] = tentative_gScore
-                randomness = 0
-                if rand:
-                    randomness = random.random()/4
-                
-                heur_score = max(abs(neighbor[0] - end[0]), abs(neighbor[1] - end[1])) + randomness
-                fScore[neighbor] = tentative_gScore + heur_score
-                if neighbor not in openSet:
-                    openSet.add(neighbor)
-
-
 def build_direct_path(start, goal):
     path = [start]
 
@@ -166,54 +103,6 @@ def build_direct_path(start, goal):
         path.append(start)
     
     return path
-
-# only allow .025 seconds before returning
-def get_path_a_star_any(cws, start, goal_type):
-    raise("stop...")
-
-    openSet = set()
-    openSet.add(start)
-
-    cameFrom = {}
-    gScore = {}
-    gScore[start] = 0
-
-    fScore = {}
-    fScore[start] = (1)
-
-    while len(openSet) != 0:
-        curr = min(openSet, key=fScore.get)
-        if type(cws.get_coord(curr)) == goal_type:
-            return reconstruct_path(cameFrom, curr)
-
-        openSet.remove(curr)
-
-        moves = []
-
-        shuffled_diff = [-1,0,1]
-        shuffle(shuffled_diff)
-
-        for xk in shuffled_diff: 
-            for yk in shuffled_diff:
-                if xk != 0 or  yk != 0:
-                    moves.append((curr[0] + xk, curr[1] + yk))
-
-
-        for neighbor in moves:
-            if not cws.is_traversable(neighbor):
-                tentative_gScore = gScore[curr] + 100000
-            else:
-                tentative_gScore = gScore[curr] + 1 
-            
-            if gScore.get(neighbor) is None:
-                gScore[neighbor] = math.inf
-            if tentative_gScore < gScore[neighbor]:
-                cameFrom[neighbor] = curr
-                gScore[neighbor] = tentative_gScore
-                heur_score = max(abs(neighbor[0] - 48), abs(neighbor[1] - 48))
-                fScore[neighbor] = tentative_gScore + heur_score
-                if neighbor not in openSet:
-                    openSet.add(neighbor)
 
 def get_step(from_pair, to_pair):
     x_dir = 0
@@ -338,12 +227,12 @@ def wander_goal(cws):
     return cws.wander_locations[2 % len(cws.wander_locations)]
 
 
-def scatter_time():
-    mod_time = int(time.time()/20) % 6
+def scatter_time(uid):
+    mod_time = int(((uid * 127) % 2**30) + time.time()/15) % 8
     return mod_time == 0
 
 def get_next_building(cws):
-    from ai.cpypastas.units import Archer
+    from ai.cpypastas.units import Archer, Calvary
     # Always need 1 townhall
     if cws.num_buildings(Townhall) < 1:
         return Townhall
@@ -371,6 +260,21 @@ def get_next_building(cws):
     if cws.num_buildings(Townhall) < 3:
         return Townhall
 
+    # Then 2 more ranges:
+    if cws.num_buildings(Range) < 2:
+        return Range
+
+    # check if we need to reserve money for stables:
+    if upgrade_over_build(cws, Calvary):
+        return None
+
+    # alternate between ranges and stables.
+    if (len(cws.gatherEmpire()) - cws.num_buildings(House)) % 5 == 0 :
+        return Stable
+
+    if (len(cws.gatherEmpire()) - cws.num_buildings(House)) % 7 == 0 :
+        return Barracks
+    
     return Range
 
 
