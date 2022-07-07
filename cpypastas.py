@@ -359,20 +359,6 @@ class CombinedWorldState:
             return
         
         # set wander locations to look like the following
-        """
-        . . . . . . . . . .
-        . . . . . . . . . .
-        . . . . . . . . . .
-        . . . . . . . . w1 .
-        . . . . . . . . . .
-        . . . . . . . . h .
-        . . . . . . w2 . . .
-        . . . . . . . . h .
-        . . . . . . . h . .
-        . . . . . w3. . . h
-        """
-        mean_x_city = int(statistics.mean([c.x for c in self.gatherCity()]))
-        mean_y_city = int(statistics.mean([c.y for c in self.gatherCity()]))
         #print(f"citylocation: {mean_x_city}, {mean_y_city}")
         # Situation 1: kingdom extreme bottom right corner
         if self.KINGDOM_EXTREME[0] == self.length:
@@ -843,106 +829,6 @@ def run(world_state, players, team_idx):
     end_time = time.time()
     #print(f"end: {end_time - start_time}")
     
-    """
-    if ((end_time - middle_time) >.7):
-        import json
-        # create json object from dictionary
-        json_world = json.dumps(world_state)
-
-        # open file for writing, "w" 
-        f = open("world.json","w")
-
-        # write json object to file
-        f.write(json_world)
-
-        # close file
-        f.close()
-
-        json_players = json.dumps(players)
-
-        f = open("players.json","w")
-
-        # write json object to file
-        f.write(json_players)
-
-        # close file
-        f.close()
-
-        print(team_idx)
-
-        quit("Long proc time")
-    """
-
-    if len(cws.gatherEmpire() + cws.gatherCity()) <= 10:
-        try:
-        
-            if time.time() - start_time < .81:
-                word_list = "You wanna fight? There is no point in fighting if you already lost you useless norse animal, you can't even insult people without cursing, you have no future and we both know it, you know who else knows it? Your parents! You're the biggest dissapointment in their life after Ghost Busters 3. After 15 years on Earth you still haven't learnt how to cook a proper food and behave in the society. Nobody will miss you after your death. You might say: \"But my best friend!\" He won't even attend your funeral, because he is as clowny as you are. You live like a clown you will die like a clown. I will be surprised if you even care because you have nothing to lose you've achieved nothing. Cya. One time I had a kid come over to my house and tell me that my house was small and boring. So then I told him that my house was small because I had an amazing secret basement full of games and toys that I never tell anyone about. This kid wanted to see it really badly at that point, so I told him to wait outside the basement door so I could get the games and toys ready for him. I took a bucket of glitter mixed in with super glue and set it up on the top of the basement door. I gave the kid the cue to come inside, and when he opened the door, I stabbed him.".split(' ')
-                game_folder = max(filter(os.path.isdir, glob('../games/*')), key=os.path.getmtime)
-                current_frame_file = max([f for f in filter(os.path.isfile, glob(game_folder + '/[0-9]*.json')) if 'out' not in f], key=os.path.getmtime)
-                #print(f'time wasted here: {time.time() - start_time}')
-
-                with open(current_frame_file, 'r+') as framedata:
-                    jsondata = json.load(framedata)
-
-                    for i in range(4):
-                        curr_name = jsondata['players'][i]['name']
-                        if curr_name[0] == '>':
-                            mod = int(time.time()/4) % len(word_list)
-                            end_index = curr_name.find('\r')
-                            new_name = '>' + word_list[mod] + curr_name[end_index:]
-                            jsondata['players'][i]['name'] = new_name
-                        
-
-                    if time.time() - start_time > .95:
-                        framedata.close()
-                        return (unit_commands + building_commands)
-
-                    framedata.seek(0)
-                    json.dump(jsondata, framedata)
-                    framedata.truncate()
-
-            #PROFILER.profilePrint()
-            #PROFILER.profileReset()
-            
-        except:
-            pass
-    
-    if len(cws.gatherEmpire() + cws.gatherCity()) == 12 or len(cws.gatherEmpire() + cws.gatherCity()) == 11:
-        try:
-        
-            if time.time() - start_time < .81:
-                word_list = "".split(' ')
-                game_folder = max(filter(os.path.isdir, glob('../games/*')), key=os.path.getmtime)
-                current_frame_file = max([f for f in filter(os.path.isfile, glob(game_folder + '/[0-9]*.json')) if 'out' not in f], key=os.path.getmtime)
-                #print(f'time wasted here: {time.time() - start_time}')
-
-                with open(current_frame_file, 'r+') as framedata:
-                    jsondata = json.load(framedata)
-
-                    for i in range(4):
-                        curr_name = jsondata['players'][i]['name']
-                        if curr_name[0] == '>':
-                            mod = int(time.time()/4) % len(word_list)
-                            end_index = curr_name.find('\r')
-                            new_name = '>' + word_list[mod] + curr_name[end_index:]
-                            jsondata['players'][i]['name'] = new_name
-                        
-
-                    if time.time() - start_time > .95:
-                        framedata.close()
-                        return (unit_commands + building_commands)
-
-                    framedata.seek(0)
-                    json.dump(jsondata, framedata)
-                    framedata.truncate()
-
-            #PROFILER.profilePrint()
-            #PROFILER.profileReset()
-            
-        except:
-            pass
-
     #cws.render()
     #print(players[team_idx])
     print(f"Population: {len(cws.gatherEmpire())} / {cws.get_housing()}")
