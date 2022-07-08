@@ -200,7 +200,7 @@ def upgrade_over_build(cws, typeof):
         return False
 
     # if we are rich, upgrade.
-    if cws.wood > 400 and cws.gold > 500:
+    if cws.wood > 400 and cws.gold > 800:
         cws.wood -= (typeof.cost()[0] * 10) 
         cws.gold -= (typeof.cost()[1] * 10) 
         return True
@@ -263,10 +263,6 @@ def get_next_building(cws):
     # Then 2 more ranges:
     if cws.num_buildings(Range) < 2:
         return Range
-
-    # check if we need to reserve money for stables:
-    if upgrade_over_build(cws, Calvary):
-        return None
 
     # alternate between ranges and stables.
     if (len(cws.gatherEmpire()) - cws.num_buildings(House)) % 5 == 0 :
